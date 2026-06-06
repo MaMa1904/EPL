@@ -10,6 +10,88 @@ This project adheres to [Semantic Versioning](https://semver.org/) and [Keep a C
 
 ---
 
+## [9.4.0] — 2026-06-05
+
+Multi-phase enterprise-grade remediation against the v9.3.0 audit findings.
+All 6 phases ship in this release.
+
+### Phase 6 — Error Explainer v2.0 (Enterprise-Grade Diagnostics)
+
+**Fixed**
+- `error_explainer.py` — No longer calls cloud AI API by default. The `_offer_ai_explanation` and `epl fix` functions previously passed `ai=True` unconditionally, causing "Groq API error (401): Invalid API Key" for every user without a configured key. Now runs 100% offline with zero API calls. AI analysis is opt-in via `--ai-errors` flag.
+- `error_explainer.py` — `_get_ai_explanation` now filters raw API error strings (401, 403, "Invalid API Key") so they never leak to the terminal even if AI is enabled.
+
+**Enhanced**
+- `error_explainer.py` — Upgraded from v1.0 (27 patterns) to v2.0 with 55+ offline patterns covering: type assignment mismatches, overflow, file I/O, method not found, missing `Then`/`Takes`, iterator exhaustion, read-only properties, map key types, `=` vs `==` in conditions, missing quotes, curly braces, semicolons, C++/Java/Ruby output syntax, parentheses in conditions, unterminated strings, unexpected EOF, and more.
+- `error_explainer.py` — **Context window**: shows 2 lines above and below the error with line numbers and Rust-style `>` pointer arrows highlighting the exact error line.
+- `error_explainer.py` — **"Did you mean?"** fuzzy matching now covers EPL keywords (not just variables/functions). Catches typos like `Funtion` → `Function`, `Whille` → `While`.
+- `error_explainer.py` — **Error code documentation links**: each explanation now includes a `https://epl-lang.org/errors/EXXXX` link in the footer.
+- `error_explainer.py` — **Category badges**: output header shows `[E0400] [TYPE]` or `[E0500] [NAME]` for quick identification.
+- `cli.py` — **Auto-fix**: `epl fix <file.epl> --fix` automatically writes the corrected code back to the file, preserving indentation. Shows old/new diff in the terminal.
+- `vscode-extension/package.json` — Renamed "EPL: Fix Errors with AI" to "EPL: Fix Errors" with `$(zap)` icon. No misleading AI branding for an offline tool.
+
+
+### Phase 5 — CI/CD hardening + dependency fixes
+
+**Fixed**
+- `pyproject.toml` — Added `[project.dependencies]` with `flask>=3.0,<4.0` and `requests>=2.31,<3.0`. Both were previously undeclared: `flask` is imported unconditionally in `mcp_http_server.py`; `requests` is a hard requirement of the bundled `epl-http` package. Consumers who `pip install eplang` now receive both transitively without needing extras.
+- `pyproject.toml` — Added upper-bound version caps to all optional dependencies. Open-ended `>=X.Y` specifiers previously risked silent breakage if a major-version bump introduced breaking changes. All entries in `llvm`, `ai`, `secure`, `server`, `redis`, `repl`, `cloud`, `all` extras now carry `<NEXT_MAJOR` caps.
+- `pyproject.toml` — Added `mypy>=1.8,<2.0` to the `[dev]` optional extra, so `pip install eplang[dev]` installs the type checker alongside pytest/ruff/coverage.
+- `.github/workflows/ci.yml` — Test matrix widened from `['3.11', '3.12']` to `['3.9', '3.10', '3.11', '3.12']`, matching the `requires-python = ">=3.9"` claim. macOS excludes 3.9/3.10 to keep runner costs reasonable.
+- `.github/workflows/ci.yml` — Added `typecheck` job: installs `.[dev]` and runs `mypy epl/ --ignore-missing-imports --exclude epl/official_packages`. mypy was configured in `pyproject.toml` but had no CI step to enforce it.
+- `.github/workflows/ci.yml` — Added `test_phase3_reliability.py`, `test_phase4_security.py`, and `test_security_hardening.py` to the stable test suite whitelist and the coverage step. These files existed but were omitted from the explicit pytest invocation, meaning security and reliability tests never ran in CI.
+
+**Tests**
+- 52 new tests in `tests/test_phase5_cicd.py` — static analysis of `pyproject.toml` and `ci.yml` covering: runtime dep declaration, lower/upper bounds on all extras, mypy in dev extra, Python 3.9/3.10/3.11/3.12 matrix, typecheck job wiring, and security test file inclusion.
+
+### Phase 4 — Official package security
+
+**Security**
+- `epl-crypto` — Removed insecure XOR-based fallback from `aes_encrypt` / `aes_decrypt`. When the `cryptography` package is absent, both functions now raise a clear `ImportError` with an install hint instead of silently falling back to a trivially-broken XOR cipher. Added `_require_cryptography(fn_name)` helper used by both functions.
+- `epl-validator` — `sanitize_sql()` previously escaped only `'` and `"`. Extended to a full 12-character-class sanitizer: `\`, `'`, `"`, `` ` ``, `;`, `--`, `#`, `%`, `_`, NUL, `\n`, `\r`. Backslash is processed first to prevent double-escaping. Includes `WARNING` docstring reminding callers to prefer parameterised queries.
+- `epl-validator` — `matches_pattern()` and `validate()` schema pattern fields previously used bare `re.match()`, allowing a crafted pattern to hang the process via catastrophic backtracking (ReDoS). Both now route through `_safe_match()`, which executes the match in a daemon thread and raises `ValueError` if it does not complete within 1 second.
+- `epl-auth` — `md5()` now emits a `DeprecationWarning` on every call, steering users toward `sha256()` or `hash_password()`. The digest return value is unchanged for checksum / legacy compatibility.
+- `epl-auth` — Session dict (`_sessions`) previously grew without bound. Added a background daemon thread (`_evict_expired`) that sweeps expired sessions every 5 minutes. All session and rate-limit dict mutations are now protected by `_sessions_lock` / `_rate_limits_lock` (thread-safety gap closed). `check_rate_limit` uses a local `bucket` copy to avoid holding the lock during list comprehension iteration.
+- `mcp_http_server.py` — `CORS_ORIGIN` default changed from `"*"` (allows any origin) to `"null"` (blocks all cross-origin browser requests). Operators set `EPL_MCP_CORS_ORIGIN=https://their-app.example.com` to allow a specific origin. Module docstring updated with guidance and a NEVER-use-`*`-for-authenticated-endpoints warning.
+
+**Tests**
+- 75 new tests in `tests/test_phase4_security.py` covering: XOR removal (simulate absent lib, verify `ImportError`), AES round-trip + fresh-nonce, SQL escaping for all 12 character classes + backslash-first ordering, ReDoS timeout, `_safe_match` invalid-regex handling, schema pattern integration, MD5 `DeprecationWarning` presence + content, session eviction on `validate_session` and via background timer, 50-thread concurrent session creation, 20-thread rate-limit fairness (exactly 10 allowed / 10 blocked), JWT round-trip + bad-secret + expiry, CORS default string + env-override.
+
+### Phase 1 — Critical language pipeline fixes
+
+**Fixed**
+- `vm.py` — Float zero (`0.0`) is now caught by the division guard alongside integer zero; previously `10.0 / 0.0` silently produced `inf` instead of a runtime error.
+- `vm.py` — List index-set (`obj[i] = val`) now raises a clean `VMError` on out-of-range indices instead of propagating a raw Python `IndexError`.
+- `lexer.py` — Triple-quote boundary check corrected (off-by-one that could read one byte past the source buffer on a 2-char source ending in `"`).
+- `lexer.py` — Hex (`\xNN`) and Unicode (`\uXXXX`) escape sequences now guard against reading past end-of-source before slicing, raising a clean `LexerError` instead of silently accepting a truncated escape.
+- `parser.py` — Rest-parameter error path now raises `ParserError(msg, line)` directly instead of calling the non-existent `self._error()` method, which previously caused an `AttributeError` crash on malformed rest parameters.
+- `python_transpiler.py` — Range loops (`for x from A to B`) were emitting one extra iteration when no step was specified. The `end + 1` expression is now correctly parenthesised for both step and no-step paths.
+- `type_checker.py` — `_check_call` now reads `node.arguments` (the correct AST attribute) instead of `node.args`, so type inference for function calls no longer silently receives an empty argument list.
+- `type_system.py` — `TypeScope.resolve_type_name` accepts a `_seen` guard set and breaks circular alias chains (`type A = B; type B = A`) by returning `EPLType(PRIMITIVE, 'any')` instead of recursing infinitely.
+
+### Phase 2 — Security
+
+**Security**
+- `web.py` — Open redirect at 7 locations: all redirect targets now pass through `_validate_redirect()`, which allows only relative paths and rejects absolute URLs and protocol-relative `//host` forms. Attackers can no longer craft `?next=https://evil.com` payloads that redirect users off-site after login/logout.
+- `web.py` — Static file path traversal: changed from `os.path.normpath` + bare `startswith` to `os.path.realpath` + `startswith(root + os.sep)`, so symlinks pointing outside the static root are also blocked.
+- `web.py` — CSP header tightened: removed `script-src 'unsafe-inline'`; added `object-src 'none'` and `base-uri 'self'` to close dangling-markup and base-tag injection vectors.
+- `html_gen.py` — Button `onclick` regex replaced: `[^)]*` (accepted arbitrary JS) with an explicit allowlist `[a-zA-Z0-9_,\s\'\".\-]*` that only allows safe argument characters.
+- `html_gen.py` — `$items{collection}` store template now HTML-escapes every item value via `html.escape()` before rendering, closing the stored-XSS vector where attacker-controlled collection values were injected verbatim.
+
+### Phase 3 — Concurrency, resource leaks, and atomicity
+
+**Fixed**
+- `bytecode_cache.py` — `save()` now writes to a `.eplc.tmp` sibling and renames it into place atomically. A crash or OOM mid-write previously left a truncated `.eplc` that caused a silent full re-parse on every subsequent run. The temp file is cleaned up on any exception before re-raising.
+- `async_io.py` — `EPLInterval.stop()` now cancels the underlying asyncio `Future` immediately via `task.cancel()` in addition to setting `_running = False`. Previously, a sleeping interval task would not wake until the current sleep elapsed, leaving a thread alive for up to `interval` seconds after `stop()`.
+- `concurrency.py` — `EPLRWLock` rewritten to eliminate a deadlock window. The previous implementation exited the `Condition` context (releasing `_lock`) and then immediately called `self._lock.acquire()` bare — another thread could win that acquire in the gap, breaking write exclusion. The new design uses three separate primitives: `_write_lock` (serialises writers and gates new readers), `_drain_event` (signals when active reader count hits zero), and `_state_lock` (guards the reader/writer counters).
+- `hot_reload.py` — `_restart_pending` plain `bool` replaced with `threading.Event` (`_restart_event`). A plain bool has no memory-barrier guarantee outside CPython's GIL and is not safe to set from one thread and read from another in general. `Event.set()` / `Event.wait()` / `Event.is_set()` are explicitly thread-safe.
+- `hot_reload.py` — New `_kill_process(proc, timeout)` helper escalates SIGTERM → SIGKILL after `timeout` seconds. The previous `proc.terminate(); proc.wait(timeout=5)` could hang indefinitely if the child ignored SIGTERM. All termination paths (`run_with_reload`, `stop`, `KeyboardInterrupt`) now use this helper.
+
+**Tests**
+- 30 new tests in `tests/test_phase3_reliability.py` covering: atomic write crash safety (mid-write OSError simulation), interval stop cancellation and idempotency, RWLock concurrent readers (peak count), writer exclusion, no-deadlock under mixed contention, `_kill_process` SIGTERM→SIGKILL escalation, and `HotReloader` event thread-visibility.
+
+---
+
 ## [9.3.0] — 2026-06-01
 
 Multi-phase enterprise-grade enhancement program. All phases bundled into a single release. Sections below correspond to phases completed before publish.
