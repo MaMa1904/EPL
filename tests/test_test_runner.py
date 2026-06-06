@@ -34,7 +34,6 @@ class TestRunnerConfig(unittest.TestCase):
 
     def test_default_config(self):
         from epl.test_framework import EPLTestRunner
-
         runner = EPLTestRunner()
         self.assertTrue(runner.verbose)
         self.assertFalse(runner.fail_fast)
@@ -45,31 +44,26 @@ class TestRunnerConfig(unittest.TestCase):
 
     def test_fail_fast_config(self):
         from epl.test_framework import EPLTestRunner
-
         runner = EPLTestRunner(fail_fast=True)
         self.assertTrue(runner.fail_fast)
 
     def test_timeout_config(self):
         from epl.test_framework import EPLTestRunner
-
         runner = EPLTestRunner(timeout=5.0)
         self.assertEqual(runner.timeout, 5.0)
 
     def test_filter_config(self):
         from epl.test_framework import EPLTestRunner
-
         runner = EPLTestRunner(filter_pattern='test_add*')
         self.assertEqual(runner.filter_pattern, 'test_add*')
 
     def test_coverage_config(self):
         from epl.test_framework import EPLTestRunner
-
         runner = EPLTestRunner(coverage_enabled=True)
         self.assertTrue(runner.coverage.enabled)
 
     def test_junit_config(self):
         from epl.test_framework import EPLTestRunner
-
         runner = EPLTestRunner(junit_xml='report.xml')
         self.assertEqual(runner.junit_xml_path, 'report.xml')
 
@@ -84,7 +78,6 @@ class TestFilterPattern(unittest.TestCase):
 
     def setUp(self):
         from epl.test_framework import EPLTestRunner
-
         self.runner = EPLTestRunner()
 
     def test_no_filter_matches_all(self):
@@ -122,7 +115,6 @@ class TestAssertions(unittest.TestCase):
 
     def setUp(self):
         from epl.test_framework import TestAssertions
-
         self.assertions = TestAssertions()
 
     def test_expect_equal_pass(self):
@@ -131,7 +123,6 @@ class TestAssertions(unittest.TestCase):
 
     def test_expect_equal_fail(self):
         from epl.test_framework import AssertionError
-
         with self.assertRaises(AssertionError):
             self.assertions.expect_equal(5, 10)
 
@@ -140,7 +131,6 @@ class TestAssertions(unittest.TestCase):
 
     def test_expect_true_fail(self):
         from epl.test_framework import AssertionError
-
         with self.assertRaises(AssertionError):
             self.assertions.expect_true(False)
 
@@ -152,7 +142,6 @@ class TestAssertions(unittest.TestCase):
 
     def test_expect_contains_fail(self):
         from epl.test_framework import AssertionError
-
         with self.assertRaises(AssertionError):
             self.assertions.expect_contains([1, 2, 3], 5)
 
@@ -167,7 +156,6 @@ class TestAssertions(unittest.TestCase):
 
     def test_expect_near_fail(self):
         from epl.test_framework import AssertionError
-
         with self.assertRaises(AssertionError):
             self.assertions.expect_near(0.3, 0.5, 0.01)
 
@@ -175,13 +163,13 @@ class TestAssertions(unittest.TestCase):
         self.assertTrue(self.assertions.expect_null(None))
 
     def test_expect_not_null_pass(self):
-        self.assertTrue(self.assertions.expect_not_null('hello'))
+        self.assertTrue(self.assertions.expect_not_null("hello"))
 
     def test_expect_length_pass(self):
         self.assertTrue(self.assertions.expect_length([1, 2, 3], 3))
 
     def test_expect_match_pass(self):
-        self.assertTrue(self.assertions.expect_match('hello123', r'\d+'))
+        self.assertTrue(self.assertions.expect_match("hello123", r'\d+'))
 
     def test_reset_clears_count(self):
         self.assertions.expect_true(True)
@@ -192,10 +180,9 @@ class TestAssertions(unittest.TestCase):
 
     def test_custom_message(self):
         from epl.test_framework import AssertionError
-
         with self.assertRaises(AssertionError) as ctx:
-            self.assertions.expect_equal(1, 2, 'Custom message here')
-        self.assertEqual(str(ctx.exception), 'Custom message here')
+            self.assertions.expect_equal(1, 2, "Custom message here")
+        self.assertEqual(str(ctx.exception), "Custom message here")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -208,12 +195,11 @@ class TestExecution(unittest.TestCase):
 
     def test_run_passing_source(self):
         from epl.test_framework import EPLTestRunner
-
-        source = """
+        source = '''
 Function test_basic
     expect_equal(2 + 3, 5)
 End
-"""
+'''
         runner = EPLTestRunner(verbose=False, color=False)
         suite = runner.run_source(source)
         self.assertEqual(suite.passed, 1)
@@ -221,20 +207,18 @@ End
 
     def test_run_failing_source(self):
         from epl.test_framework import EPLTestRunner
-
-        source = """
+        source = '''
 Function test_bad
     expect_equal(2 + 3, 10)
 End
-"""
+'''
         runner = EPLTestRunner(verbose=False, color=False)
         suite = runner.run_source(source)
         self.assertEqual(suite.failed, 1)
 
     def test_run_multiple_tests(self):
         from epl.test_framework import EPLTestRunner
-
-        source = """
+        source = '''
 Function test_one
     expect_true(1 is equal to 1)
 End
@@ -246,7 +230,7 @@ End
 Function test_three
     expect_false(1 is equal to 2)
 End
-"""
+'''
         runner = EPLTestRunner(verbose=False, color=False)
         suite = runner.run_source(source)
         self.assertEqual(suite.total, 3)
@@ -254,12 +238,11 @@ End
 
     def test_inline_test_block(self):
         from epl.test_framework import EPLTestRunner
-
-        source = """
+        source = '''
 Test "inline addition"
     expect_equal(1 + 1, 2)
 End Test
-"""
+'''
         runner = EPLTestRunner(verbose=False, color=False)
         suite = runner.run_source(source)
         self.assertEqual(suite.total, 1)
@@ -276,8 +259,7 @@ class TestFailFast(unittest.TestCase):
 
     def test_fail_fast_stops_after_first_failure(self):
         from epl.test_framework import EPLTestRunner
-
-        source = """
+        source = '''
 Function test_a_pass
     expect_true(1 is equal to 1)
 End
@@ -289,7 +271,7 @@ End
 Function test_c_would_pass
     expect_true(1 is equal to 1)
 End
-"""
+'''
         runner = EPLTestRunner(verbose=False, color=False, fail_fast=True)
         suite = runner.run_source(source)
         # test_a passes, test_b fails → test_c should be skipped
@@ -299,8 +281,7 @@ End
 
     def test_no_fail_fast_runs_all(self):
         from epl.test_framework import EPLTestRunner
-
-        source = """
+        source = '''
 Function test_a_pass
     expect_true(1 is equal to 1)
 End
@@ -312,7 +293,7 @@ End
 Function test_c_pass
     expect_true(1 is equal to 1)
 End
-"""
+'''
         runner = EPLTestRunner(verbose=False, color=False, fail_fast=False)
         suite = runner.run_source(source)
         self.assertEqual(suite.total, 3)
@@ -328,8 +309,7 @@ class TestFilterExecution(unittest.TestCase):
 
     def test_filter_runs_only_matching(self):
         from epl.test_framework import EPLTestRunner
-
-        source = """
+        source = '''
 Function test_math_add
     expect_equal(2 + 3, 5)
 End
@@ -341,7 +321,7 @@ End
 Function test_string_concat
     expect_equal("a" + "b", "ab")
 End
-"""
+'''
         runner = EPLTestRunner(verbose=False, color=False, filter_pattern='test_math_*')
         suite = runner.run_source(source)
         self.assertEqual(suite.total, 2)
@@ -358,11 +338,9 @@ class TestFileDiscovery(unittest.TestCase):
 
     def test_run_file(self):
         from epl.test_framework import EPLTestRunner
-
         # Create a temp test file
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.epl', delete=False, encoding='utf-8'
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.epl', delete=False,
+                                         encoding='utf-8') as f:
             f.write('Function test_temp\n    expect_true(1 is equal to 1)\nEnd\n')
             path = f.name
         try:
@@ -374,7 +352,6 @@ class TestFileDiscovery(unittest.TestCase):
 
     def test_run_nonexistent_file(self):
         from epl.test_framework import EPLTestRunner
-
         runner = EPLTestRunner(verbose=False, color=False)
         suite = runner.run_file('/nonexistent/test.epl')
         self.assertTrue(len(suite.setup_errors) > 0)
@@ -390,8 +367,7 @@ class TestJUnitXML(unittest.TestCase):
 
     def test_junit_xml_output(self):
         from epl.test_framework import EPLTestRunner
-
-        source = """
+        source = '''
 Function test_pass
     expect_equal(1, 1)
 End
@@ -399,7 +375,7 @@ End
 Function test_fail
     expect_equal(1, 2)
 End
-"""
+'''
         with tempfile.NamedTemporaryFile(suffix='.xml', delete=False) as f:
             xml_path = f.name
 
@@ -429,7 +405,6 @@ class TestCoverageTracker(unittest.TestCase):
 
     def test_register_and_hit(self):
         from epl.test_framework import EPLCoverageTracker
-
         tracker = EPLCoverageTracker()
         tracker.register_file('test.epl', 'Set x to 1\nSet y to 2\nSay x + y\n')
         tracker.record_hit('test.epl', 1)
@@ -439,13 +414,11 @@ class TestCoverageTracker(unittest.TestCase):
 
     def test_empty_coverage(self):
         from epl.test_framework import EPLCoverageTracker
-
         tracker = EPLCoverageTracker()
         self.assertEqual(tracker.get_total_coverage(), 100.0)
 
     def test_unregistered_file(self):
         from epl.test_framework import EPLCoverageTracker
-
         tracker = EPLCoverageTracker()
         self.assertEqual(tracker.get_file_coverage('unknown.epl'), 0.0)
 
@@ -460,13 +433,11 @@ class TestMockSupport(unittest.TestCase):
 
     def test_mock_returns_value(self):
         from epl.test_framework import Mock
-
         mock = Mock(return_value=42)
         self.assertEqual(mock(), 42)
 
     def test_mock_tracks_calls(self):
         from epl.test_framework import Mock
-
         mock = Mock()
         mock(1, 2)
         mock(3)
@@ -475,7 +446,6 @@ class TestMockSupport(unittest.TestCase):
 
     def test_mock_reset(self):
         from epl.test_framework import Mock
-
         mock = Mock()
         mock()
         mock.reset()
@@ -484,9 +454,8 @@ class TestMockSupport(unittest.TestCase):
 
     def test_mock_side_effect(self):
         from epl.test_framework import Mock
-
         mock = Mock()
-        mock.side_effect = ValueError('boom')
+        mock.side_effect = ValueError("boom")
         with self.assertRaises(ValueError):
             mock()
 
@@ -501,7 +470,6 @@ class TestResultData(unittest.TestCase):
 
     def test_test_result_defaults(self):
         from epl.test_framework import TestResult
-
         result = TestResult(name='test_example')
         self.assertEqual(result.name, 'test_example')
         self.assertEqual(result.status, 'pending')
@@ -509,7 +477,6 @@ class TestResultData(unittest.TestCase):
 
     def test_suite_result_counts(self):
         from epl.test_framework import TestResult, TestSuiteResult
-
         suite = TestSuiteResult(name='test_suite')
         suite.tests.append(TestResult(name='t1', status='passed'))
         suite.tests.append(TestResult(name='t2', status='passed'))
@@ -533,7 +500,6 @@ class TestCollectionHeader(unittest.TestCase):
 
     def test_collection_header_sets_counts(self):
         from epl.test_framework import EPLTestRunner
-
         runner = EPLTestRunner(verbose=False, color=False)
         runner.print_collection_header(3, 15)
         self.assertEqual(runner._files_collected, 3)

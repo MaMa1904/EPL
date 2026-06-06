@@ -102,7 +102,6 @@ class TestExecAsyncNoShell(unittest.TestCase):
         # We only care that no shell interpretation happens; either a clean
         # launch of `echo` with extra args, or an OSError, is acceptable.
         import shutil
-
         echo = shutil.which('echo') or shutil.which('cmd.exe')
         if not echo:
             self.skipTest('no echo/cmd available')

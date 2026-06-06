@@ -153,5 +153,3 @@ functions/
 # ─── Wrangler / Cloudflare ──────────────────────────────
 .wrangler
 .dev.vars*
-ci_cd_configs/
-epl/ci_cd_configs/

@@ -126,10 +126,7 @@ End""",
     ('string contains', 'Print contains("hello world", "world")\nPrint contains("hello", "xyz")'),
     ('string trim', 'Print trim("  hello  ")'),
     ('string indexing', 'Create s equal to "abc"\nPrint s[0]\nPrint s[1]\nPrint s[2]'),
-    (
-        'loop with continue',
-        'For each i in [1, 2, 3, 4, 5]\n  If i == 3\n    Continue\n  End\n  Print i\nEnd',
-    ),
+    ('loop with continue', 'For each i in [1, 2, 3, 4, 5]\n  If i == 3\n    Continue\n  End\n  Print i\nEnd'),
     (
         'recursive function',
         """Function factorial(n)

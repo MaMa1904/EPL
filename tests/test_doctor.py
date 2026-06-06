@@ -34,12 +34,14 @@ from epl.doctor import (
     run_doctor,
 )
 
+
 # ═══════════════════════════════════════════════════════════
 # CheckResult Tests
 # ═══════════════════════════════════════════════════════════
 
 
 class TestCheckResult(unittest.TestCase):
+
     def test_ok_result(self):
         r = CheckResult(name='Test', status='ok', message='All good')
         self.assertEqual(r.name, 'Test')
@@ -74,6 +76,7 @@ class TestCheckResult(unittest.TestCase):
 
 
 class TestDoctorReport(unittest.TestCase):
+
     def test_empty_report(self):
         r = DoctorReport()
         self.assertEqual(r.ok_count, 0)
@@ -127,6 +130,7 @@ class TestDoctorReport(unittest.TestCase):
 
 
 class TestPythonVersionCheck(unittest.TestCase):
+
     def test_returns_ok_or_warn(self):
         result = check_python_version()
         self.assertIn(result.status, ('ok', 'warn'))
@@ -139,6 +143,7 @@ class TestPythonVersionCheck(unittest.TestCase):
 
 
 class TestEPLInstallation(unittest.TestCase):
+
     def test_epl_found(self):
         result = check_epl_installation()
         self.assertEqual(result.status, 'ok')
@@ -146,6 +151,7 @@ class TestEPLInstallation(unittest.TestCase):
 
 
 class TestNodeCheck(unittest.TestCase):
+
     def test_returns_valid_status(self):
         result = check_node()
         self.assertIn(result.status, ('ok', 'warn'))
@@ -156,24 +162,28 @@ class TestNodeCheck(unittest.TestCase):
 
 
 class TestNpmCheck(unittest.TestCase):
+
     def test_returns_valid_status(self):
         result = check_npm()
         self.assertIn(result.status, ('ok', 'warn'))
 
 
 class TestGitCheck(unittest.TestCase):
+
     def test_returns_valid_status(self):
         result = check_git()
         self.assertIn(result.status, ('ok', 'warn'))
 
 
 class TestPipCheck(unittest.TestCase):
+
     def test_returns_valid_status(self):
         result = check_pip()
         self.assertIn(result.status, ('ok', 'warn'))
 
 
 class TestPlatformCheck(unittest.TestCase):
+
     def test_always_ok(self):
         result = check_platform()
         self.assertEqual(result.status, 'ok')
@@ -181,6 +191,7 @@ class TestPlatformCheck(unittest.TestCase):
 
 
 class TestDiskSpaceCheck(unittest.TestCase):
+
     def test_returns_valid_status(self):
         result = check_disk_space()
         self.assertIn(result.status, ('ok', 'warn', 'fail', 'skip'))
@@ -192,12 +203,14 @@ class TestDiskSpaceCheck(unittest.TestCase):
 
 
 class TestEncodingCheck(unittest.TestCase):
+
     def test_returns_valid_status(self):
         result = check_encoding()
         self.assertIn(result.status, ('ok', 'warn'))
 
 
 class TestProjectStructure(unittest.TestCase):
+
     def test_in_epl_repo(self):
         result = check_project_structure()
         # Could be ok, warn, or skip depending on cwd
@@ -218,6 +231,7 @@ class TestProjectStructure(unittest.TestCase):
 
 
 class TestDependencies(unittest.TestCase):
+
     def test_no_manifest(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             old_cwd = os.getcwd()
@@ -249,12 +263,12 @@ class TestDependencies(unittest.TestCase):
 
 
 class TestRunDoctor(unittest.TestCase):
+
     def test_all_checks_registered(self):
         self.assertEqual(len(ALL_CHECKS), 11)
 
     def test_run_returns_exit_code(self):
         from io import StringIO
-
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         try:
@@ -265,7 +279,6 @@ class TestRunDoctor(unittest.TestCase):
 
     def test_json_output(self):
         from io import StringIO
-
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         try:

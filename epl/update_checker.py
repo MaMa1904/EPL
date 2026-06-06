@@ -21,11 +21,9 @@ def _get_version():
     """Lazy version getter to avoid circular imports."""
     try:
         from epl import __version__
-
         return __version__
     except ImportError:
         return '0.0.0'
-
 
 # ── Configuration ────────────────────────────────────────
 

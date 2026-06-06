@@ -51,9 +51,3 @@ flask>=3.0.0
 # ─── Optional: Development (running the test suite) ──────
 # pytest>=7.0
 # coverage>=7.0
-
-# All other features (interpreter, JS transpiler, Kotlin generator,
-# package manager, HTML generator, web framework, type checker, linter,
-# formatter, profiler, REPL, LSP, VM) use Python standard library only.
-PyYAML>=6.0
-pytest-cov>=4.0.0
